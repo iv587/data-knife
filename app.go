@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"github.com/gin-gonic/gin"
 	"github.io/iv587/goredis-admin/api"
 	"github.io/iv587/goredis-admin/db"
@@ -10,7 +9,7 @@ import (
 )
 
 func main() {
-	fmt.Println(db.Init())
+	db.Init()
 	server := http.Server{
 		HttpEngine: gin.Default(),
 		Addr:       ":8888",

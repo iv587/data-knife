@@ -1,6 +1,7 @@
 package api
 
 import (
+	"fmt"
 	"github.com/gin-gonic/gin"
 	"github.io/iv587/goredis-admin/auth"
 	"github.io/iv587/goredis-admin/http"
@@ -32,6 +33,22 @@ var authHander = func(ctx *gin.Context) {
 }
 
 var RouteMap http.Route = func(en *gin.Engine) {
+	en.GET("/", func(c *gin.Context) {
+		fmt.Println("hello")
+		c.File("web/index.html")
+	})
+	en.GET("/css/:file", func(c *gin.Context) {
+		c.File("web/css/" + c.Params.ByName("file"))
+	})
+	en.GET("/fonts/:file", func(c *gin.Context) {
+		c.File("web/fonts/" + c.Params.ByName("file"))
+	})
+	en.GET("/js/:file", func(c *gin.Context) {
+		c.File("web/js/" + c.Params.ByName("file"))
+	})
+	en.Any("/favicon.ico", func(c *gin.Context) {
+		c.File("web/favicon.ico")
+	})
 	apiGroup := en.Group("/api/")
 	apiGroup.Use(errHandler)
 	//redisGroup
