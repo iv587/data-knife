@@ -8,6 +8,7 @@ function resolve(dir) {
 const name = 'redis监控'
 
 module.exports = {
+  outputDir: '../web',
   lintOnSave: process.env.NODE_ENV === 'development',
   productionSourceMap: false,
   devServer: {

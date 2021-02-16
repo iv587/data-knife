@@ -7,12 +7,11 @@ import { getToken } from '@/utils/auth'
 NProgress.configure({ showSpinner: false })
 router.beforeEach(async(to, from, next) => {
   NProgress.start()
-  console.log(getToken())
   if (to.path !== '/login' && !getToken()) {
     next({ path: '/login' })
     NProgress.done()
   }else  {
-    if (to.path === '/login') {
+    if (to.path === '/login' && getToken()) {
       next({ path: '/' })
       NProgress.done()
     }

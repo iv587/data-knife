@@ -19,9 +19,6 @@
         </el-form-item>
       </el-form>
     </el-main>
-    <el-footer>
-      <el-link>123</el-link>
-    </el-footer>
   </el-container>
 </template>
 
