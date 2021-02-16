@@ -33,7 +33,7 @@
           <router-view />
         </div>
         <div class="footer">
-          <el-link href type="info">
+          <el-link target="_blank" href="https://github.com/iv587/goredis-admin" type="info">
             <svg-icon class-name="githubicon" icon-class="github" ></svg-icon><span class="title">Git Hub</span>
           </el-link>
         </div>
