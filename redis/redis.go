@@ -70,16 +70,97 @@ func Dbs(id int) (int, error) {
 
 func Keys(id, dbNo int, keyPattern string) (*KeyList, error) {
 	rdb, err := db.GetClient(id, dbNo)
+	dbsize := rdb.DBSize(context.Background()).Val()
 	if err != nil {
 		return nil, err
 	}
+	var maxKeys int64 = 1000
+	keyList, err := getKeyListByEval(rdb, maxKeys, keyPattern)
+	if err != nil {
+		if strings.Contains(err.Error(), "command eval not support") {
+			keyList, err = getKeyList(rdb, maxKeys, keyPattern, dbsize)
+			if err != nil {
+				return nil, err
+			}
+		} else {
+			return nil, err
+		}
+	}
+	return &KeyList{
+		Total: dbsize,
+		List:  keyList,
+	}, nil
+}
+
+func getKeyList(rdb *redis.Client, maxKeys int64, keyPattern string, dbSize int64) ([]KeyInfo, error) {
+	var err error
+	var keys []string
+	if dbSize <= maxKeys {
+		pattern := "*"
+		if keyPattern != "" {
+			pattern = keyPattern
+		}
+		keys, err = rdb.Keys(context.Background(), pattern).Result()
+		if err != nil {
+			return nil, err
+		}
+	} else {
+		keys = make([]string, 0, maxKeys)
+		if keyPattern != "" {
+			var cursor uint64 = 0
+			for {
+				var sKeys []string
+				sKeys, cursor, err = rdb.Scan(context.Background(), cursor, keyPattern, maxKeys).Result()
+				if err != nil {
+					return nil, err
+				}
+				if len(sKeys) > 0 {
+					keys = append(keys, sKeys...)
+				}
+				if cursor == 0 {
+					break
+				}
+			}
+		} else {
+			for i := 0; i < int(maxKeys); i++ {
+				var key string
+				key, err = rdb.RandomKey(context.Background()).Result()
+				if err != nil {
+					return nil, err
+				}
+				keys = append(keys, key)
+			}
+		}
+	}
+	keyInfoList := make([]KeyInfo, 0, len(keys))
+	for _, key := range keys {
+		var keyType string
+		keyType, err = rdb.Type(context.Background(), key).Result()
+		if err != nil {
+			return nil, err
+		}
+		var ttl time.Duration
+		ttl, err = rdb.TTL(context.Background(), key).Result()
+		if err != nil {
+			return nil, err
+		}
+		keyInfoList = append(keyInfoList, KeyInfo{
+			Key:  key,
+			Type: keyType,
+			TTL:  int(ttl.Seconds()),
+		})
+	}
+	return keyInfoList, nil
+}
+
+func getKeyListByEval(rdb *redis.Client, maxKeys int64, keyPattern string) ([]KeyInfo, error) {
 	var args = make([]interface{}, 0, 20)
-	args = append(args, 100)
+	args = append(args, maxKeys)
 	if keyPattern != "" {
 		args = append(args, keyPattern)
 	}
 	var keyInfoList interface{}
-	keyInfoList, err = rdb.Eval(context.Background(), keysInfoLuaScript, []string{}, args).Result()
+	keyInfoList, err := rdb.Eval(context.Background(), keysInfoLuaScript, []string{}, args).Result()
 	if err != nil {
 		return nil, err
 	}
@@ -96,10 +177,7 @@ func Keys(id, dbNo int, keyPattern string) (*KeyList, error) {
 			Type: keyInfo[2],
 		})
 	}
-	return &KeyList{
-		Total: rdb.DBSize(context.Background()).Val(),
-		List:  keyList,
-	}, nil
+	return keyList, nil
 }
 
 // 更新 redis 数据
