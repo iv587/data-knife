@@ -11,11 +11,8 @@ go语言编写，无需任何运行时依赖，即可部署
 * 源码安装
 ```shell script
 git clone https://github.com/iv587/goredis-admin.git
-cd ./frontend
-npm run build
-根据运行系统编译go项目
-将目录下的web目录和二进制文件部署到目标服务器即可
-
+sh ./build_linux
+# 将可执行文件start和web目录上传到目标服务器即可使用
 ```
 
 ## 使用
