@@ -20,7 +20,7 @@
      npm run build
      go mod download
      go mod vendor
-     go build start.go
+     go build gredisw.go
    ```
 2. 下载[二进制文件](https://github.com/iv587/goredis-admin/releases)
 
