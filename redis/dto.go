@@ -39,6 +39,7 @@ type KeyDetail struct {
 type FvPairs struct {
 	Field string `json:"field"`
 	Val   string `json:"val"`
+	Score string `json:"score"`
 }
 
 type InfoWrap struct {

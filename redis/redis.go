@@ -2,10 +2,10 @@ package redis
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"github.com/go-redis/redis/v8"
-	jsoniter "github.com/json-iterator/go"
 	"github.io/iv587/goredis-admin/db"
 	"strconv"
 	"strings"
@@ -76,9 +76,6 @@ func Keys(id, dbNo int, keyPattern string) (*KeyList, error) {
 	var args = make([]interface{}, 0, 20)
 	args = append(args, 100)
 	if keyPattern != "" {
-		if !strings.Contains(keyPattern, "*") {
-			keyPattern = "*" + keyPattern + "*"
-		}
 		args = append(args, keyPattern)
 	}
 	var keyInfoList interface{}
@@ -131,11 +128,10 @@ func Update(param KeyParam) (string, error) {
 			return "", err
 		}
 		if ttl < 0 {
-			fmt.Println(ttl)
 			ttl = 0 * time.Second
 		}
 	}
-	err = jsoniter.Unmarshal([]byte(param.ValuesStr), &param.Values)
+	err = json.Unmarshal([]byte(param.ValuesStr), &param.Values)
 	if err != nil {
 		return "", err
 	}
@@ -151,6 +147,10 @@ func Update(param KeyParam) (string, error) {
 	case SetType:
 		var res1 int64
 		res1, err = updateSetTypeVal(rdc, param.Key, param.Values, ttl)
+		res = strconv.FormatInt(res1, 10)
+	case ZsetType:
+		var res1 int64
+		res1, err = updateZetTypeVal(rdc, param.Key, param.Values, ttl)
 		res = strconv.FormatInt(res1, 10)
 	}
 	return res, err
@@ -168,9 +168,6 @@ func updateHashTypeVal(rdc *redis.Client, key string, values []FvPairs, ttl time
 	for _, v := range values {
 		mapVal = append(mapVal, v.Field, v.Val)
 	}
-	fmt.Println(mapVal)
-	r := rdc.HSet(context.Background(), key, mapVal).Args()
-	fmt.Println(r)
 	res, err := rdc.HMSet(context.Background(), key, mapVal).Result()
 	if err != nil {
 
@@ -221,6 +218,35 @@ func updateSetTypeVal(rdc *redis.Client, key string, values []FvPairs, ttl time.
 		}
 	}
 	return res, nil
+}
+
+func updateZetTypeVal(rdc *redis.Client, key string, values []FvPairs, ttl time.Duration) (int64, error) {
+	_, err := rdc.Del(context.Background(), key).Result()
+	if err != nil {
+
+	}
+	z := make([]*redis.Z, 0, len(values))
+	for _, i2 := range values {
+		var score float64
+		if i2.Score != "" {
+			score, err = strconv.ParseFloat(i2.Score, 10)
+		}
+		z = append(z, &redis.Z{
+			Score:  score,
+			Member: i2.Val,
+		})
+	}
+	res, err := rdc.ZAdd(context.Background(), key, z...).Result()
+	if err != nil {
+		return 0, err
+	}
+	if ttl.Microseconds() > 0 {
+		_, err = rdc.Expire(context.Background(), key, ttl).Result()
+		if err != nil {
+			return 0, err
+		}
+	}
+	return res, err
 }
 
 // 获取key value的信息
@@ -290,13 +316,13 @@ func KeyValInfo(param KeyParam) (*KeyDetail, error) {
 			keyDetail.Values = append(keyDetail.Values, fv)
 		}
 	case ZsetType:
-		res, err := rdc.ZRange(context.Background(), param.Key, 0, -1).Result()
+		z, err := rdc.ZRangeWithScores(context.Background(), param.Key, 0, -1).Result()
 		if err != nil {
 			return nil, err
 		}
-		keyDetail.Values = make([]FvPairs, 0, len(res))
-		for k, v := range res {
-			fv := FvPairs{Field: fmt.Sprintf("%d", k), Val: v}
+		keyDetail.Values = make([]FvPairs, 0, len(z))
+		for k, v := range z {
+			fv := FvPairs{Field: fmt.Sprintf("%d", k), Val: v.Member.(string), Score: fmt.Sprintf("%f", v.Score)}
 			keyDetail.Values = append(keyDetail.Values, fv)
 		}
 	}

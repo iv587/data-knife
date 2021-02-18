@@ -40,7 +40,8 @@
         <el-table
           style="width: 80vw"
           v-loading="loading"
-          :data="data.list" max-height="500">
+          :data="data.list"
+          max-height="500">
           <el-table-column label="Key">
             <template slot-scope="scope">
               {{scope.row.key}}
@@ -66,14 +67,14 @@
         </el-table>
       </section>
       <el-dialog :visible.sync="dataDlg.show">
-        <el-form v-model="dataDlg.data" label-width="80px">
-          <el-form-item label="名称:">
+        <el-form v-model="dataDlg.data" :rules="dataDlg.rules" label-width="80px">
+          <el-form-item label="Key:" prop="key">
             <el-row>
               <el-input  size="mini" style="width: 400px" :disabled="dataDlg.edit" v-model="dataDlg.data.key" />
             </el-row>
           </el-form-item>
           <el-form-item label="类型:">
-            <el-select @change="values = []" size="mini" :disabled="dataDlg.edit" v-model="dataDlg.data.type">
+            <el-select @change="dataTypeChange" size="mini" :disabled="dataDlg.edit" v-model="dataDlg.data.type">
               <el-option value="string" />
               <el-option value="list" />
               <el-option value="hash" />
@@ -84,7 +85,7 @@
           <el-form-item label="TTL (秒):">
             <el-row :gutter="10">
               <el-col :span="5">
-                <el-input size="mini" :disabled="!dataDlg.isUpdateTtl" v-model="dataDlg.data.ttl">
+                <el-input size="mini" :disabled="!dataDlg.isUpdateTtl" placeholder="默认不过期" v-model="dataDlg.data.ttl">
                 </el-input>
               </el-col>
               <el-col :span="6">
@@ -116,7 +117,7 @@
                 </el-row>
               </el-card>
             </div>
-            <div style="width: 250px; padding-left: 5px" v-if="['list','set','zset'].indexOf(dataDlg.data.type) >= 0">
+            <div style="width: 250px; padding-left: 5px" v-if="['list','set'].indexOf(dataDlg.data.type) >= 0">
               <el-row  :gutter="10">
                 <el-col :span="19">
                   <el-input size="mini" v-model="dataDlg.addVal.val" placeholder="value" />
@@ -128,6 +129,26 @@
               <el-card  v-if="values.length > 0" :body-style="{ background:'#ecf0f1', paddingTop:'10px' }" shadow="never" style="max-height: 30vh; overflow-y: auto; margin-top: 10px">
                 <el-row :gutter="10" v-for="item in values" :key="item.field">
                   <el-col :span="19"><el-input size="mini" v-model="item.val"></el-input></el-col>
+                  <el-col :span="3"><el-button size="mini" icon="el-icon-minus" circle @click="removeVal(item.field)" /></el-col>
+                </el-row>
+              </el-card>
+            </div>
+            <div style="width: 250px; padding-left: 5px" v-if="dataDlg.data.type === 'zset'">
+              <el-row  :gutter="10">
+                <el-col :span="8">
+                  <el-input size="mini" v-model="dataDlg.addVal.score" placeholder="score" />
+                </el-col>
+                <el-col :span="12">
+                  <el-input size="mini" v-model="dataDlg.addVal.val" placeholder="member" />
+                </el-col>
+                <el-col :span="3">
+                  <el-button @click="addVal" circle icon="el-icon-plus"  size="mini"/>
+                </el-col>
+              </el-row>
+              <el-card  v-if="values.length > 0" :body-style="{ background:'#ecf0f1', paddingTop:'10px' }" shadow="never" style="max-height: 30vh; overflow-y: auto; margin-top: 10px">
+                <el-row :gutter="10" v-for="item in values" :key="item.field">
+                  <el-col :span="8"><el-input size="mini" v-model="item.score"></el-input></el-col>
+                  <el-col :span="12"><el-input size="mini" v-model="item.val"></el-input></el-col>
                   <el-col :span="3"><el-button size="mini" icon="el-icon-minus" circle @click="removeVal(item.field)" /></el-col>
                 </el-row>
               </el-card>
@@ -157,24 +178,30 @@ export default {
         zset: 'danger',
         string: 'success'
       },
-      values:[],
+      values: [],
       data: {
         list: []
       },
       dataDlg: {
         show: false,
         edit: false,
-        isUpdateTtl:  true,
+        isUpdateTtl: true,
         addVal: {
           field: '',
           val: '',
+          score: ''
         },
         data: {
           values: []
+        },
+        rules: {
+          key: [
+            { required: true, message: '请输入key', trigger: 'blur' }
+          ]
         }
       },
       connectionList: [],
-      dbList:[],
+      dbList: [],
       loading: false,
       query: {
         id: 0,
@@ -193,12 +220,12 @@ export default {
         this.loading = false
       })
     },
-    refreshData () {
+    refreshData() {
       this.query.keyPattern = ''
       this.getData()
     },
     changeConnectionHandle() {
-      this.currentServer({id: this.query.id})
+      this.currentServer({ id: this.query.id })
       this.setDbNo(0)
       this.query.dbNo = this.currDbNo
       this.refreshData()
@@ -209,76 +236,87 @@ export default {
     },
     // 更新数据
     updateData() {
-      let _this = this
+      const _this = this
       this.dataDlg.data.values = JSON.stringify(this.values)
+      this.dataDlg.data.isUpdateTtl = this.dataDlg.isUpdateTtl ? 1 : 0
       updateRedisData({
-          ...this.dataDlg.data
+        ...this.dataDlg.data
       }).then(res => {
         Message.success({
           message: res.msg,
           type: 'success',
           duration: 1000,
-          onClose: function () {
+          onClose: function() {
             _this.dataDlg.show = false
             _this.refreshData()
           }
         })
-
       })
     },
     // 打开添加或编辑对话框
     openDlg(data) {
       this.values = []
-      this.dataDlg.data = {type: 'string', id: this.query.id , dbNo: this.query.dbNo} ;
+      this.dataDlg.data = { type: 'string', id: this.query.id, dbNo: this.query.dbNo }
       this.dataDlg.edit = false
       this.dataDlg.isUpdateTtl = true
       if (data) {
-          getRedisKeyInfo({
-            dbNo: this.query.dbNo,
-            id: this.query.id,
-            key: data.key
-          }).then(res => {
-            this.dataDlg.data = res.data
-            this.dataDlg.data.id = this.query.id
-            this.dataDlg.data.dbNo = this.query.dbNo
-            this.dataDlg.edit = true
-            this.dataDlg.isUpdateTtl = false
-            this.dataDlg.show = true
-            this.values = this.dataDlg.data.values
-          })
-      }else  {
+        getRedisKeyInfo({
+          dbNo: this.query.dbNo,
+          id: this.query.id,
+          key: data.key
+        }).then(res => {
+          this.dataDlg.data = res.data
+          this.dataDlg.data.id = this.query.id
+          this.dataDlg.data.dbNo = this.query.dbNo
+          this.dataDlg.edit = true
+          this.dataDlg.isUpdateTtl = false
+          this.dataDlg.show = true
+          this.values = this.dataDlg.data.values
+        })
+      } else {
         this.dataDlg.show = true
       }
     },
     // 添加hash list set值
     addVal() {
       const data = this.dataDlg.addVal
-      //判断key是否重复
-      if (this.dataDlg.data.type === 'hash') {
-         if(!data.field) {
-           Message.error('请输入Key')
-           return;
-         }
-         for (let i in this.values) {
-           if( this.values[i].field === data.field) {
-             Message.error('Key重复')
-             return
-           }
-         }
-      } else {
-        data.field = new Date().getTime()+'-' + Math.random()
+      if (!data.val) {
+        Message.error('请输入正确的值')
+        return
       }
-      if (['set', 'zset'].indexOf(this.dataDlg.data.type) >= 0) {
-        for (let i in values) {
-          if( this.values[i].val === data.val) {
-            Message.error('不能有重复的值')
+      // 判断key是否重复
+      if (this.dataDlg.data.type === 'hash') {
+        if (!data.field) {
+          Message.error('请输入Key')
+          return
+        }
+        for (const i in this.values) {
+          if (this.values[i].field === data.field) {
+            Message.error('Key重复')
             return
           }
         }
       }
-      if (!data.val) {
-        Message.error('请输入正确的值')
-        return
+      if (this.dataDlg.data.type === 'list') {
+        data.field = new Date().getTime() + '-' + Math.random()
+      }
+      if (this.dataDlg.data.type === 'set') {
+        for (const i in this.values) {
+          if (this.values[i].val === data.val) {
+            Message.error('不能有重复的值')
+            return
+          }
+        }
+        data.field = data.val
+      }
+      if (this.dataDlg.data.type === 'zset') {
+        for (const i in this.values) {
+          if (this.values[i].val === data.val) {
+            Message.error('不能有重复的值')
+            return
+          }
+        }
+        data.field = data.val
       }
       this.values.unshift({
         ...data
@@ -288,29 +326,29 @@ export default {
     // 移除hash list set值
     removeVal(field) {
       let index = -1
-      for (let i in this.values) {
-        if( this.values[i].field === field) {
+      for (const i in this.values) {
+        if (this.values[i].field === field) {
           index = i
           break
         }
       }
       if (index >= 0) {
-        this.$nextTick(function () {
-          this.values.splice(index,1)
+        this.$nextTick(function() {
+          this.values.splice(index, 1)
         })
       }
     },
     deleteKeyHandler(item) {
-      let _this = this
-      MessageBox.confirm('确认删除key='+item.key+"数据？",{
+      const _this = this
+      MessageBox.confirm('确认删除key=' + item.key + '数据？', {
         type: 'warning'
       }).then(res => {
-        deleteKey({id: _this.query.id, dbNo: _this.query.dbNo, key: item.key }).then(r => {
+        deleteKey({ id: _this.query.id, dbNo: _this.query.dbNo, key: item.key }).then(r => {
           Message.success({
             message: r.msg,
             type: 'success',
             duration: 1000,
-            onClose: function () {
+            onClose: function() {
               _this.dataDlg.show = false
               _this.refreshData()
             }
@@ -318,19 +356,27 @@ export default {
         })
       })
     },
+    dataTypeChange() {
+      this.values = []
+      this.dataDlg.addVal = {
+        field: '',
+        val: '',
+        score: ''
+      }
+    },
     ...mapActions(['currentServer', 'setMenuActiveIndex', 'setDbNo'])
   },
   mounted() {
     this.setMenuActiveIndex(this.$route.path)
     this.query.id = this.$store.state.redis.current.id
     getRedisServerList({}).then(res => {
-      this.connectionList = res.data.list.map(function (item) {
+      this.connectionList = res.data.list.map(function(item) {
         item.name = item.name ? item.name : item.addr
         return item
       })
     })
     this.query.dbNo = this.currDbNo
-    getRedisDbs({id: this.query.id}).then(res => {
+    getRedisDbs({ id: this.query.id }).then(res => {
       this.dbList = res.data.list
     })
     this.refreshData()

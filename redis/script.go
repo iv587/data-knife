@@ -27,7 +27,7 @@ else
     end
 end
 local keyInfoList = { }
-local index = 0
+local index = 1
 for k,v in pairs(keyList) do
     local type = redis.call('TYPE', v)
     local ttl = redis.call('ttl', v)

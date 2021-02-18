@@ -37,11 +37,11 @@
     :title= "editDlg.title"
     :visible.sync="editDlg.show"
     width="40%">
-    <el-form ref="form" :model="editDlg.data" label-width="80px">
-      <el-form-item label="别名:">
+    <el-form ref="form" :model="editDlg.data" :rules="editDlg.rules" label-width="80px">
+      <el-form-item label="别名:" prop="name">
         <el-input v-model="editDlg.data.name"></el-input>
       </el-form-item>
-      <el-form-item label="地址:">
+      <el-form-item label="地址:" prop="addr">
         <el-input v-model="editDlg.data.addr"></el-input>
       </el-form-item>
       <el-form-item v-if="editDlg.isEdit">
@@ -62,7 +62,7 @@
 </template>
 
 <script>
-  import {getRedisServerList, connectionUpdate, testConnection, deleteConnection} from '@/api/redis'
+import { getRedisServerList, connectionUpdate, testConnection, deleteConnection } from '@/api/redis'
 import { mapActions } from 'vuex'
 import { Message, MessageBox } from 'element-ui'
 
@@ -83,6 +83,14 @@ export default {
           password: '',
           name: '',
           addr: ''
+        },
+        rules: {
+          name: [
+            { required: true, message: '起一个好记的别名吧', trigger: 'blur' }
+          ],
+          addr: [
+            { required: true, message: '得输入地址o,如:ip:port', trigger: 'blur' }
+          ]
         }
       }
     }
@@ -104,11 +112,11 @@ export default {
       }
       if (item) {
         this.editDlg.title = '编辑' + item.name
-        this.editDlg.data.id = item.id ;
-        this.editDlg.data.addr = item.addr ;
-        this.editDlg.data.name = item.name ;
+        this.editDlg.data.id = item.id
+        this.editDlg.data.addr = item.addr
+        this.editDlg.data.name = item.name
         this.editDlg.isEdit = true
-      }else {
+      } else {
         this.editDlg.title = '添加'
       }
       this.editDlg.show = true
@@ -116,16 +124,17 @@ export default {
     updateConnection() {
       const upPass = this.editDlg.upPass
       const data = this.editDlg.data
-      let _this = this
+      const _this = this
       connectionUpdate({
-         upPass,...data
+        upPass, ...data
       }).then(res => {
         Message.success({
           message: res.msg,
           type: 'success',
           duration: 1000,
-          onClose: function () {
+          onClose: function() {
             _this.editDlg.show = false
+            _this.currentServer({ id: data.id, dbNo: 0, name: data.name })
             _this.getRedisServer()
           }
         })
@@ -136,16 +145,16 @@ export default {
       this.$router.push({ path: '/redis/info', params: {}})
     },
     deleteData(item) {
-      let _this = this
-      MessageBox.confirm('确认删除连接'+item.name+'数据？',{
+      const _this = this
+      MessageBox.confirm('确认删除连接' + item.name + '数据？', {
         type: 'warning'
       }).then(res => {
-        deleteConnection({id: item.id }).then(r => {
+        deleteConnection({ id: item.id }).then(r => {
           Message.success({
             message: r.msg,
             type: 'success',
             duration: 1000,
-            onClose: function () {
+            onClose: function() {
               _this.currentServer1(item.id)
               _this.getRedisServer()
             }
@@ -158,11 +167,7 @@ export default {
         Message.success({
           message: res.msg,
           type: 'success',
-          duration: 1000,
-          onClose: function () {
-            _this.editDlg.show = false
-            _this.getRedisServer()
-          }
+          duration: 1000
         })
       })
     },

@@ -1,6 +1,6 @@
 const state = () => {
   return {
-    token: '',
+    token: ''
   }
 }
 
