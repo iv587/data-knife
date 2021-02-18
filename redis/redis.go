@@ -78,7 +78,7 @@ func Keys(id, dbNo int, keyPattern string) (*KeyList, error) {
 	keyList, err := getKeyListByEval(rdb, maxKeys, keyPattern)
 	if err != nil {
 		if strings.Contains(err.Error(), "command eval not support") {
-			keyList, err = getKeyList(rdb, maxKeys, keyPattern, dbsize)
+			keyList, err = getKeyList(rdb, keyPattern, dbsize)
 			if err != nil {
 				return nil, err
 			}
@@ -92,8 +92,9 @@ func Keys(id, dbNo int, keyPattern string) (*KeyList, error) {
 	}, nil
 }
 
-func getKeyList(rdb *redis.Client, maxKeys int64, keyPattern string, dbSize int64) ([]KeyInfo, error) {
+func getKeyList(rdb *redis.Client, keyPattern string, dbSize int64) ([]KeyInfo, error) {
 	var err error
+	var maxKeys int64 = 100
 	var keys []string
 	if dbSize <= maxKeys {
 		pattern := "*"
