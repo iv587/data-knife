@@ -3,6 +3,7 @@ package auth
 import (
 	"errors"
 	jwt "github.com/dgrijalva/jwt-go"
+	"github.io/iv587/goredis-admin/db"
 	"time"
 )
 
@@ -13,12 +14,16 @@ var (
 
 type jwtClaims struct {
 	jwt.StandardClaims
-	Id int
+	Id       int
+	Name     string
+	Password string
 }
 
-func Gen(id int) (string, error) {
+func Gen(user db.User) (string, error) {
 	claims := new(jwtClaims)
-	claims.Id = id
+	claims.Id = user.Id
+	claims.Name = user.Name
+	claims.Password = user.Password
 	claims.IssuedAt = time.Now().Unix()
 	claims.ExpiresAt = time.Now().Add(time.Second * time.Duration(expireTime)).Unix()
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
@@ -29,23 +34,27 @@ func Gen(id int) (string, error) {
 	return signedToken, nil
 }
 
-func Verify(strToken string) (bool, int, error) {
+func Verify(strToken string) (bool, *db.User, error) {
 	if strToken == "" {
-		return false, 0, nil
+		return false, nil, nil
 	}
 	token, err := jwt.ParseWithClaims(strToken, &jwtClaims{}, func(token *jwt.Token) (interface{}, error) {
 		return []byte(secret), nil
 	})
 	if err != nil {
-		return false, 0, errors.New("网络错误，请重试")
+		return false, nil, errors.New("网络错误，请重试")
 	}
 
 	claims, ok := token.Claims.(*jwtClaims)
 	if !ok {
-		return false, 0, nil
+		return false, nil, nil
 	}
 	if err := token.Claims.Valid(); err != nil {
-		return false, 0, nil
+		return false, nil, nil
 	}
-	return true, claims.Id, nil
+	return true, &db.User{
+		Id:       claims.Id,
+		Password: claims.Password,
+		Name:     claims.Name,
+	}, nil
 }

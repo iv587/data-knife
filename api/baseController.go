@@ -35,3 +35,11 @@ func noLoginJson(ctx *gin.Context) {
 	}
 	ctx.JSON(200, res)
 }
+
+func noLoginWithMsg(ctx *gin.Context, msg string) {
+	res := jsonRes{
+		Code: 3,
+		Msg:  msg,
+	}
+	ctx.JSON(200, res)
+}

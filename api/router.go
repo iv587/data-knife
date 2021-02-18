@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/gin-gonic/gin"
 	"github.io/iv587/goredis-admin/auth"
+	"github.io/iv587/goredis-admin/db"
 	"github.io/iv587/goredis-admin/http"
 )
 
@@ -19,7 +20,7 @@ var errHandler = func(ctx *gin.Context) {
 
 var authHander = func(ctx *gin.Context) {
 	tokenStr := ctx.PostForm("token")
-	ok, id, err := auth.Verify(tokenStr)
+	ok, user, err := auth.Verify(tokenStr)
 	if err != nil {
 		panic(err)
 	}
@@ -27,7 +28,16 @@ var authHander = func(ctx *gin.Context) {
 		noLoginJson(ctx)
 		ctx.Abort()
 	} else {
-		ctx.Set("userId", id)
+		u, err := db.GetUserInfo(user.Id)
+		if err != nil {
+			noLoginWithMsg(ctx, err.Error())
+			ctx.Abort()
+		}
+		if u.Name != user.Name || u.Password != user.Password {
+			noLoginWithMsg(ctx, "用户状态已变更，请重新登录！")
+			ctx.Abort()
+		}
+		ctx.Set("userId", user.Id)
 		ctx.Next()
 	}
 }

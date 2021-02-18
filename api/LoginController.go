@@ -35,7 +35,7 @@ func (c *LoginController) Login(ctx *gin.Context) {
 	if err != nil {
 		panic(err)
 	}
-	token, err := auth.Gen(user.Id)
+	token, err := auth.Gen(user)
 	if err != nil {
 		panic(err)
 	}
