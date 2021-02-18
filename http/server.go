@@ -20,7 +20,12 @@ type Server struct {
 func Init() {
 	writer := []io.Writer{os.Stdout}
 	if cfg.GetBoolCfg("log.enable") {
-		f, _ := os.Create(cfg.GetCfg("log.path", "app.log"))
+		logPath := cfg.GetCfg("log.path", "logs")
+		_, err := os.Stat(logPath)
+		if err != nil && os.IsNotExist(err) {
+			os.MkdirAll(logPath, os.ModePerm)
+		}
+		f, _ := os.Create(logPath + string(os.PathSeparator) + "http.log")
 		writer = append(writer, f)
 	}
 	gin.DefaultWriter = io.MultiWriter(writer...)

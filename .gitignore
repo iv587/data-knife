@@ -42,5 +42,5 @@ vendor/
 web
 **/dist
 data/**
-app.log
+http.log
 conf

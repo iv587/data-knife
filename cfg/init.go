@@ -12,9 +12,9 @@ import (
 const path = "conf"
 const confPath = path + string(os.PathSeparator) + "app.conf"
 
-const defaultConf = `server.addr=:8080
-log.enable=false
-log.path=app.log
+const defaultConf = `server.addr=:8888
+log.enable=true
+log.path=logs
 `
 
 var configMap = make(map[string]string)
