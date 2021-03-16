@@ -29,7 +29,8 @@ import {
   Loading,
   Tabs,
   TabPane,
-  Link
+  Link,
+  Alert
 } from 'element-ui'
 Vue.use(Container)
 Vue.use(Aside)
@@ -60,3 +61,4 @@ Vue.use(Loading)
 Vue.use(Tabs)
 Vue.use(TabPane)
 Vue.use(Link)
+Vue.use(Alert)

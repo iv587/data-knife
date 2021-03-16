@@ -12,7 +12,7 @@
         </el-form-item>
         <el-form-item label="密码">
           <span slot="label" style="color: grey">密码:</span>
-          <el-input type="password" v-model="param.password" />
+          <el-input type="password" v-model="param.password" @keyup.enter.native="loginHandle" />
         </el-form-item>
         <el-form-item>
           <el-button @click="loginHandle">登录</el-button>

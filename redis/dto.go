@@ -16,6 +16,7 @@ type KeyInfo struct {
 type KeyList struct {
 	List  []KeyInfo `json:"list"`
 	Total int64     `json:"total"`
+	Max   int64     `json:"max"`
 }
 
 type KeyParam struct {

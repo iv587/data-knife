@@ -1,15 +1,13 @@
 package db
 
 import (
-	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/go-redis/redis/v8"
+	"github.io/iv587/goredis-admin/ledis"
 	"io/ioutil"
 	"os"
 	"sync"
-	"time"
 )
 
 type Connection struct {
@@ -22,7 +20,7 @@ type Connection struct {
 type ConnectionWrap struct {
 	Connection
 	sync.RWMutex
-	client map[int]*redis.Client
+	client map[int]ledis.Cli
 }
 
 var connectionDao = struct {
@@ -68,12 +66,9 @@ func UpdateConnection(conn Connection, upPass int) error {
 		if upPass == 1 {
 			connWrap.Password = conn.Password
 		}
-		if connWrap.Addr != conn.Addr || (upPass == 1 && conn.Password != connWrap.Password) {
-			connWrap.close()
-		}
 	} else {
 		connWrap = ConnectionWrap{
-			client: make(map[int]*redis.Client),
+			client: make(map[int]ledis.Cli),
 		}
 		connWrap.Password = conn.Password
 	}
@@ -121,10 +116,6 @@ func ConnectionList() ([]Connection, error) {
 func Delete(id int) error {
 	connectionDao.Lock()
 	defer connectionDao.Unlock()
-	conn, ok := connectionDao.connections[id]
-	if ok {
-		conn.close()
-	}
 	delete(connectionDao.connections, id)
 	bytes, err := json.Marshal(connectionDao.connections)
 	if err != nil {
@@ -133,60 +124,11 @@ func Delete(id int) error {
 	return ioutil.WriteFile(redisDbPath, bytes, os.ModePerm)
 }
 
-// 返回 dbNo 对应的redis客户端
-func (c *ConnectionWrap) DbClient(dbNo int) (*redis.Client, error) {
-	dbClient, isExist := c.client[dbNo]
-	if !isExist {
-		dbClient = c.createAndGetDbClient(dbNo)
-	}
-	//测试redis的链接是否可用
-	_, err := dbClient.Ping(context.Background()).Result()
-	if err != nil {
-		//清空该实例的所有链接
-		c.close()
-		return nil, err
-	}
-	return dbClient, nil
-}
-
-// 创建对应的 dbNo 的redis客户端并返回
-func (c *ConnectionWrap) createAndGetDbClient(dbNo int) *redis.Client {
-	c.Lock()
-	defer c.Unlock()
-	if c.client == nil {
-		c.client = make(map[int]*redis.Client)
-	}
-	//双重判断
-	dbClient, isExist := c.client[dbNo]
-	if isExist {
-		return dbClient
-	}
-	rdb := redis.NewClient(&redis.Options{
-		Addr:        c.Addr,
-		Password:    c.Password,
-		IdleTimeout: time.Minute * 5,
-		DB:          dbNo,
-	})
-	c.client[dbNo] = rdb
-	return rdb
-}
-
-// 关闭该redis实例的链接
-func (c *ConnectionWrap) close() {
-	c.Lock()
-	defer c.Unlock()
-	for key, it := range c.client {
-		it.Close()
-		delete(c.client, key)
-	}
-
-}
-
 // 获取指定 dbNo的 客户端
-func GetClient(id, dbNo int) (*redis.Client, error) {
+func GetClient(id, dbNo int) (ledis.Cli, error) {
 	conn, isExist := connectionDao.connections[id]
 	if !isExist {
 		return nil, errors.New("连接redis失败")
 	}
-	return conn.DbClient(dbNo)
+	return ledis.Create(conn.Addr, conn.Password, dbNo)
 }
