@@ -36,6 +36,15 @@
           <el-button @click="openDlg()">添加</el-button>
         </el-form-item>
       </el-form>
+      <el-alert
+        type="info"
+        show-icon
+        :closable="false"
+      >
+        <p slot="title">
+          <span>数据总数:</span><span>{{data.total}}</span> &nbsp;&nbsp; <span>当前获取数:</span><span>{{data.maxNum}}</span>
+        </p>
+      </el-alert>
       <section style="display: flex; justify-content: center">
         <el-table
           style="width: 80vw"
@@ -180,6 +189,8 @@ export default {
       },
       values: [],
       data: {
+        total: 0,
+        maxNum: 0,
         list: []
       },
       dataDlg: {
@@ -217,6 +228,8 @@ export default {
         this.query
       ).then(res => {
         this.data.list = res.data.list
+        this.data.total = res.data.total
+        this.data.maxNum = this.data.list.length
         this.loading = false
       })
     },
@@ -248,7 +261,6 @@ export default {
           duration: 1000,
           onClose: function() {
             _this.dataDlg.show = false
-            _this.refreshData()
           }
         })
       })

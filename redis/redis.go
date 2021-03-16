@@ -1,15 +1,13 @@
 package redis
 
 import (
-	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/go-redis/redis/v8"
 	"github.io/iv587/goredis-admin/db"
+	"github.io/iv587/goredis-admin/ledis"
 	"strconv"
 	"strings"
-	"time"
 )
 
 const (
@@ -36,12 +34,12 @@ func AddOrUpdateConn(conn db.Connection, upPass int) error {
 
 // 测试连接
 func TestConn(addr, password string) (bool, error) {
-	rdb := redis.NewClient(&redis.Options{
-		Addr:        addr,
-		Password:    password,
-		IdleTimeout: time.Minute * 5,
-	})
-	_, err := rdb.Ping(context.Background()).Result()
+	rdb, err := ledis.Create(addr, password, 0)
+	defer rdb.Close()
+	if err != nil {
+		return false, err
+	}
+	_, err = rdb.Ping()
 	if err != nil {
 		return false, err
 	}
@@ -50,15 +48,17 @@ func TestConn(addr, password string) (bool, error) {
 
 func Dbs(id int) (int, error) {
 	rdb, err := db.GetClient(id, 0)
+	defer rdb.Close()
+
 	if err != nil {
 		return 0, err
 	}
-	res, err := rdb.ConfigGet(context.Background(), "databases").Result()
+	res, err := rdb.ConfigGet("databases")
 	if err != nil {
 		return 0, err
 	}
 	if len(res) > 1 {
-		dbNumStr, _ := res[1].(string)
+		dbNumStr := res[1]
 		dbNum, err := strconv.Atoi(dbNumStr)
 		if err != nil {
 			return 0, nil
@@ -70,7 +70,8 @@ func Dbs(id int) (int, error) {
 
 func Keys(id, dbNo int, keyPattern string) (*KeyList, error) {
 	rdb, err := db.GetClient(id, dbNo)
-	dbsize := rdb.DBSize(context.Background()).Val()
+	defer rdb.Close()
+	dbsize, err := rdb.DBSize()
 	if err != nil {
 		return nil, err
 	}
@@ -78,7 +79,7 @@ func Keys(id, dbNo int, keyPattern string) (*KeyList, error) {
 	keyList, err := getKeyListByEval(rdb, maxKeys, keyPattern)
 	if err != nil {
 		if strings.Contains(err.Error(), "command eval not support") {
-			keyList, err = getKeyList(rdb, keyPattern, dbsize)
+			keyList, err = getKeyList(rdb, keyPattern, dbsize, maxKeys)
 			if err != nil {
 				return nil, err
 			}
@@ -89,29 +90,29 @@ func Keys(id, dbNo int, keyPattern string) (*KeyList, error) {
 	return &KeyList{
 		Total: dbsize,
 		List:  keyList,
+		Max:   maxKeys,
 	}, nil
 }
 
-func getKeyList(rdb *redis.Client, keyPattern string, dbSize int64) ([]KeyInfo, error) {
+func getKeyList(rdb ledis.Cli, keyPattern string, dbSize, maxKeys int64) ([]KeyInfo, error) {
 	var err error
-	var maxKeys int64 = 100
 	var keys []string
 	if dbSize <= maxKeys {
 		pattern := "*"
 		if keyPattern != "" {
 			pattern = keyPattern
 		}
-		keys, err = rdb.Keys(context.Background(), pattern).Result()
+		keys, err = rdb.Keys(pattern)
 		if err != nil {
 			return nil, err
 		}
 	} else {
 		keys = make([]string, 0, maxKeys)
 		if keyPattern != "" {
-			var cursor uint64 = 0
+			var cursor int64 = 0
 			for {
 				var sKeys []string
-				sKeys, cursor, err = rdb.Scan(context.Background(), cursor, keyPattern, maxKeys).Result()
+				sKeys, cursor, err = rdb.Scan(keyPattern, cursor, maxKeys)
 				if err != nil {
 					return nil, err
 				}
@@ -125,7 +126,7 @@ func getKeyList(rdb *redis.Client, keyPattern string, dbSize int64) ([]KeyInfo, 
 		} else {
 			for i := 0; i < int(maxKeys); i++ {
 				var key string
-				key, err = rdb.RandomKey(context.Background()).Result()
+				key, err = rdb.RandomKey()
 				if err != nil {
 					return nil, err
 				}
@@ -136,32 +137,31 @@ func getKeyList(rdb *redis.Client, keyPattern string, dbSize int64) ([]KeyInfo, 
 	keyInfoList := make([]KeyInfo, 0, len(keys))
 	for _, key := range keys {
 		var keyType string
-		keyType, err = rdb.Type(context.Background(), key).Result()
+		keyType, err = rdb.Type(key)
 		if err != nil {
 			return nil, err
 		}
-		var ttl time.Duration
-		ttl, err = rdb.TTL(context.Background(), key).Result()
+		ttl, err := rdb.TTL(key)
 		if err != nil {
 			return nil, err
 		}
 		keyInfoList = append(keyInfoList, KeyInfo{
 			Key:  key,
 			Type: keyType,
-			TTL:  int(ttl.Seconds()),
+			TTL:  ttl,
 		})
 	}
 	return keyInfoList, nil
 }
 
-func getKeyListByEval(rdb *redis.Client, maxKeys int64, keyPattern string) ([]KeyInfo, error) {
+func getKeyListByEval(rdb ledis.Cli, maxKeys int64, keyPattern string) ([]KeyInfo, error) {
 	var args = make([]interface{}, 0, 20)
 	args = append(args, maxKeys)
 	if keyPattern != "" {
 		args = append(args, keyPattern)
 	}
 	var keyInfoList interface{}
-	keyInfoList, err := rdb.Eval(context.Background(), keysInfoLuaScript, []string{}, args).Result()
+	keyInfoList, err := rdb.Eval(keysInfoLuaScript, []string{}, args...)
 	if err != nil {
 		return nil, err
 	}
@@ -172,8 +172,9 @@ func getKeyListByEval(rdb *redis.Client, maxKeys int64, keyPattern string) ([]Ke
 	keyList := make([]KeyInfo, 0, len(keyInfoList1))
 	for _, v := range keyInfoList1 {
 		keyInfo := v.([]interface{})
+		var t = keyInfo[0].([]uint8)
 		keyList = append(keyList, KeyInfo{
-			Key:  keyInfo[0],
+			Key:  string(t),
 			TTL:  keyInfo[1],
 			Type: keyInfo[2],
 		})
@@ -188,26 +189,28 @@ func Update(param KeyParam) (string, error) {
 		err error
 	)
 	rdc, err := db.GetClient(param.Id, param.DbNo)
+	defer rdc.Close()
+
 	if err != nil {
 		return "", err
 	}
-	res, err = rdc.Type(context.Background(), param.Key).Result()
+	res, err = rdc.Type(param.Key)
 	if err != nil {
 		return "", err
 	}
 	if res != NoneType && res != param.Type {
 		return "", errors.New("已存在其他类型的数据")
 	}
-	var ttl time.Duration
+	var ttl int64
 	if param.IsUpdateTtl == 1 {
-		ttl = time.Second * time.Duration(param.Ttl)
+		ttl = param.Ttl
 	} else {
-		ttl, err = rdc.TTL(context.Background(), param.Key).Result()
+		ttl, err = rdc.TTL(param.Key)
 		if err != nil {
 			return "", err
 		}
 		if ttl < 0 {
-			ttl = 0 * time.Second
+			ttl = 0
 		}
 	}
 	err = json.Unmarshal([]byte(param.ValuesStr), &param.Values)
@@ -236,43 +239,43 @@ func Update(param KeyParam) (string, error) {
 }
 
 // 更新字符串类型的redis值
-func updateStrTypeVal(rdc *redis.Client, key, val string, ttl time.Duration) (string, error) {
-	res, err := rdc.Set(context.Background(), key, val, ttl).Result()
+func updateStrTypeVal(rdc ledis.Cli, key, val string, ttl int64) (string, error) {
+	res, err := rdc.Set(key, val, ttl)
 	return res, err
 }
 
-func updateHashTypeVal(rdc *redis.Client, key string, values []FvPairs, ttl time.Duration) (string, error) {
-	rdc.Del(context.Background(), key)
-	mapVal := make([]string, 0, len(values)*2)
+func updateHashTypeVal(rdc ledis.Cli, key string, values []FvPairs, ttl int64) (string, error) {
+	rdc.Del(key)
+	mapVal := make(map[string]string)
 	for _, v := range values {
-		mapVal = append(mapVal, v.Field, v.Val)
+		mapVal[v.Field] = v.Val
 	}
-	res, err := rdc.HMSet(context.Background(), key, mapVal).Result()
+	res, err := rdc.HMSet(key, mapVal)
 	if err != nil {
 
 		return "", err
 	}
-	if ttl.Microseconds() > 0 {
-		_, err = rdc.Expire(context.Background(), key, ttl).Result()
+	if ttl > 0 {
+		_, err = rdc.Expire(key, ttl)
 		if err != nil {
 			return "", err
 		}
 	}
-	return strconv.FormatBool(res), nil
+	return res, nil
 }
 
-func updateListTypeVal(rdc *redis.Client, key string, values []FvPairs, ttl time.Duration) (int64, error) {
+func updateListTypeVal(rdc ledis.Cli, key string, values []FvPairs, ttl int64) (int64, error) {
 	strVal := make([]string, 0, len(values))
 	for _, v := range values {
 		strVal = append(strVal, v.Val)
 	}
-	rdc.Del(context.Background(), key)
-	res, err := rdc.LPush(context.Background(), key, strVal).Result()
+	rdc.Del(key)
+	res, err := rdc.LPush(key, strVal...)
 	if err != nil {
 		return 0, err
 	}
-	if ttl.Microseconds() > 0 {
-		_, err = rdc.Expire(context.Background(), key, ttl).Result()
+	if ttl > 0 {
+		_, err = rdc.Expire(key, ttl)
 		if err != nil {
 			return 0, err
 		}
@@ -280,18 +283,18 @@ func updateListTypeVal(rdc *redis.Client, key string, values []FvPairs, ttl time
 	return res, nil
 }
 
-func updateSetTypeVal(rdc *redis.Client, key string, values []FvPairs, ttl time.Duration) (int64, error) {
+func updateSetTypeVal(rdc ledis.Cli, key string, values []FvPairs, ttl int64) (int64, error) {
 	strVal := make([]string, 0, len(values))
 	for _, v := range values {
 		strVal = append(strVal, v.Val)
 	}
-	rdc.Del(context.Background(), key)
-	res, err := rdc.SAdd(context.Background(), key, strVal).Result()
+	rdc.Del(key)
+	res, err := rdc.SAdd(key, strVal...)
 	if err != nil {
 		return 0, err
 	}
-	if ttl.Microseconds() > 0 {
-		_, err = rdc.Expire(context.Background(), key, ttl).Result()
+	if ttl > 0 {
+		_, err = rdc.Expire(key, ttl)
 		if err != nil {
 			return 0, err
 		}
@@ -299,28 +302,28 @@ func updateSetTypeVal(rdc *redis.Client, key string, values []FvPairs, ttl time.
 	return res, nil
 }
 
-func updateZetTypeVal(rdc *redis.Client, key string, values []FvPairs, ttl time.Duration) (int64, error) {
-	_, err := rdc.Del(context.Background(), key).Result()
+func updateZetTypeVal(rdc ledis.Cli, key string, values []FvPairs, ttl int64) (int64, error) {
+	_, err := rdc.Del(key)
 	if err != nil {
 
 	}
-	z := make([]*redis.Z, 0, len(values))
+	z := make([]ledis.Z, 0, len(values))
 	for _, i2 := range values {
 		var score float64
 		if i2.Score != "" {
 			score, err = strconv.ParseFloat(i2.Score, 10)
 		}
-		z = append(z, &redis.Z{
+		z = append(z, ledis.Z{
 			Score:  score,
 			Member: i2.Val,
 		})
 	}
-	res, err := rdc.ZAdd(context.Background(), key, z...).Result()
+	res, err := rdc.ZAdd(key, z...)
 	if err != nil {
 		return 0, err
 	}
-	if ttl.Microseconds() > 0 {
-		_, err = rdc.Expire(context.Background(), key, ttl).Result()
+	if ttl > 0 {
+		_, err = rdc.Expire(key, ttl)
 		if err != nil {
 			return 0, err
 		}
@@ -331,23 +334,24 @@ func updateZetTypeVal(rdc *redis.Client, key string, values []FvPairs, ttl time.
 // 获取key value的信息
 func KeyValInfo(param KeyParam) (*KeyDetail, error) {
 	rdc, err := db.GetClient(param.Id, param.DbNo)
+	defer rdc.Close()
 	if err != nil {
 		return nil, err
 	}
-	dataType, err := rdc.Type(context.Background(), param.Key).Result()
+	dataType, err := rdc.Type(param.Key)
 	if err != nil {
 		return nil, err
 	}
 	if dataType == NoneType {
 		return nil, errors.New("该key不存在或被删除")
 	}
-	ttlRes, err := rdc.TTL(context.Background(), param.Key).Result()
+	ttlRes, err := rdc.TTL(param.Key)
 	if err != nil {
 		return nil, err
 	}
-	ttl := 0
+	var ttl int64
 	if ttlRes > 0 {
-		ttl = int(ttlRes.Seconds())
+		ttl = ttlRes
 	}
 	var keyDetail = KeyDetail{
 		KeyInfo: KeyInfo{
@@ -358,13 +362,13 @@ func KeyValInfo(param KeyParam) (*KeyDetail, error) {
 	}
 	switch dataType {
 	case StringType:
-		res, err := rdc.Get(context.Background(), param.Key).Result()
+		res, err := rdc.Get(param.Key)
 		if err != nil {
 			return nil, err
 		}
 		keyDetail.Value = res
 	case ListType:
-		res, err := rdc.LRange(context.Background(), param.Key, 0, -1).Result()
+		res, err := rdc.LRange(param.Key, 0, -1)
 		if err != nil {
 			return nil, err
 		}
@@ -374,7 +378,7 @@ func KeyValInfo(param KeyParam) (*KeyDetail, error) {
 			keyDetail.Values = append(keyDetail.Values, fv)
 		}
 	case HashType:
-		res, err := rdc.HGetAll(context.Background(), param.Key).Result()
+		res, err := rdc.HGetAll(param.Key)
 		if err != nil {
 			return nil, err
 		}
@@ -385,7 +389,7 @@ func KeyValInfo(param KeyParam) (*KeyDetail, error) {
 		}
 
 	case SetType:
-		res, err := rdc.SMembers(context.Background(), param.Key).Result()
+		res, err := rdc.SMembers(param.Key)
 		if err != nil {
 			return nil, err
 		}
@@ -395,13 +399,15 @@ func KeyValInfo(param KeyParam) (*KeyDetail, error) {
 			keyDetail.Values = append(keyDetail.Values, fv)
 		}
 	case ZsetType:
-		z, err := rdc.ZRangeWithScores(context.Background(), param.Key, 0, -1).Result()
+		z, err := rdc.ZRange(param.Key, 0, -1, true)
 		if err != nil {
 			return nil, err
 		}
 		keyDetail.Values = make([]FvPairs, 0, len(z))
 		for k, v := range z {
-			fv := FvPairs{Field: fmt.Sprintf("%d", k), Val: v.Member.(string), Score: fmt.Sprintf("%f", v.Score)}
+			fv := FvPairs{
+				Field: fmt.Sprintf("%d", k),
+				Val:   v.Member, Score: fmt.Sprintf("%f", v.Score)}
 			keyDetail.Values = append(keyDetail.Values, fv)
 		}
 	}
@@ -410,10 +416,11 @@ func KeyValInfo(param KeyParam) (*KeyDetail, error) {
 
 func Info(id, dbNo int) ([]*InfoWrap, error) {
 	rdc, err := db.GetClient(id, dbNo)
+	defer rdc.Close()
 	if err != nil {
 		return nil, err
 	}
-	res, err := rdc.Info(context.Background()).Result()
+	res, err := rdc.Info()
 	if err != nil {
 		return nil, err
 	}
@@ -443,9 +450,10 @@ func Info(id, dbNo int) ([]*InfoWrap, error) {
 // 删除key
 func Delete(param KeyParam) (int64, error) {
 	rdc, err := db.GetClient(param.Id, param.DbNo)
+	defer rdc.Close()
 	if err != nil {
 		return 0, err
 	}
-	res, err := rdc.Del(context.Background(), param.Key).Result()
+	res, err := rdc.Del(param.Key)
 	return res, err
 }
