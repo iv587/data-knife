@@ -20,7 +20,7 @@ type Server struct {
 func Init() {
 	writer := []io.Writer{os.Stdout}
 	if cfg.GetBoolCfg("log.enable") {
-		logPath := cfg.GetCfg("log.path", "logs")
+		logPath := cfg.GetCfg("log.path")
 		_, err := os.Stat(logPath)
 		if err != nil && os.IsNotExist(err) {
 			os.MkdirAll(logPath, os.ModePerm)

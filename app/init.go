@@ -24,7 +24,7 @@ func Init() {
 func Start() {
 	server := http.Server{
 		HttpEngine: gin.Default(),
-		Addr:       cfg.GetCfg("server.addr", ":8080"),
+		Addr:       cfg.GetCfg("server.addr"),
 	}
 	server.Route(api.RouteMap)
 	server.Start()

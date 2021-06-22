@@ -1,10 +1,11 @@
 package main
 
-import (
-	"github.io/iv587/goredis-admin/app"
-)
+import "github.com/spf13/viper"
 
 func main() {
-	app.Init()
-	app.Start()
+	viper.SetConfigType("toml")
+	str := ""
+
+	//app.Init()
+	// app.Start()
 }
