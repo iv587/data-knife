@@ -10,7 +10,7 @@ import (
 const path = "data"
 
 func Init() error {
-	// 查找配置文件
+	// 查找配置文件并初始化用户
 	_, err := os.Stat(path)
 	if err != nil {
 		if os.IsNotExist(err) {
