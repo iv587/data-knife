@@ -1,0 +1,17 @@
+@use "element-plus/theme-chalk/src/dark/css-vars.scss" as *;
+
+@font-face {
+  font-family: "阿里巴巴普惠体 2.0 115 Regular";
+  font-weight: 1000;
+  src: url("@/assets/Alibaba_PuHuiTi_2.0_45_Light_45_Light.ttf");
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "阿里巴巴普惠体 2.0 115 Black";
+  font-weight: 1000;
+  src: url("@/assets/Alibaba_PuHuiTi_2.0_115_Black_115_Black.ttf");
+  font-display: swap;
+}
+
+$headerHeight: 60px;
