@@ -2,21 +2,46 @@ package api
 
 import (
 	"dk/auth"
+	"errors"
 	"github.com/gin-gonic/gin"
+	"io/fs"
+	"net/http"
+	"os"
+	"path"
+	"strings"
 )
 
+func toHTTPError(err error) (msg string, httpStatus int) {
+	if errors.Is(err, fs.ErrNotExist) {
+		return "404 page not found", http.StatusNotFound
+	}
+	if errors.Is(err, fs.ErrPermission) {
+		return "403 Forbidden", http.StatusForbidden
+	}
+	// Default:
+	return "500 Internal Server Error", http.StatusInternalServerError
+}
+
 var Router = func(route *gin.Engine) {
-	route.GET("/", func(c *gin.Context) {
-		c.File("web/index.html")
-	})
-	route.GET("/assets/:file", func(c *gin.Context) {
-		c.File("web/assets/" + c.Params.ByName("file"))
-	})
-	route.GET("/vite.svg", func(c *gin.Context) {
-		c.File("web/" + c.Params.ByName("file"))
-	})
-	route.NoRoute(func(context *gin.Context) {
-		context.File("web/index.html")
+	route.Use(func(context *gin.Context) {
+		url := context.Request.URL.Path
+		if strings.Index(url, "/api/") != 0 {
+			filePath := url
+			fi, err := os.Stat(path.Join("web", filePath))
+			if err != nil {
+				if os.IsNotExist(err) || fi.IsDir() {
+					filePath = "index.html"
+				} else {
+					msg, status := toHTTPError(err)
+					context.AbortWithError(status, errors.New(msg))
+					return
+				}
+			}
+			context.File(path.Join("web", filePath))
+			context.Abort()
+		} else {
+			context.Next()
+		}
 	})
 
 	apiGroup := route.Group("/api")
@@ -46,6 +71,7 @@ var Router = func(route *gin.Engine) {
 }
 
 var Cors = func(cors *gin.Engine) {
+	println("跨域")
 	cors.Use(func(c *gin.Context) {
 		c.Writer.Header().Set("Access-Control-Allow-Origin", "*")
 		c.Writer.Header().Set("Access-Control-Allow-Methods", "all")
@@ -55,6 +81,7 @@ var Cors = func(cors *gin.Engine) {
 }
 
 var errHandler = func(ctx *gin.Context) {
+	println("全局")
 	defer func() {
 		if err := recover(); err != nil {
 			err1 := err.(error)
