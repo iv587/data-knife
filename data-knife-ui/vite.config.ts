@@ -10,7 +10,14 @@ import {ElementPlusResolver} from 'unplugin-vue-components/resolvers'
 // https://vitejs.dev/config/
 export default defineConfig({
     build: {
-      outDir: path.join("..", "web")
+      outDir: path.join("..", "web"),
+      rollupOptions: {
+          input: {
+              main: path.resolve(__dirname, 'index.html'),
+              mobile: path.resolve(__dirname, 'mobile/index.html'),
+              login: path.resolve(__dirname, 'login', 'index.html')
+          }
+      }
     },
     plugins: [
         vue(),

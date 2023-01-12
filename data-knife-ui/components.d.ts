@@ -60,6 +60,7 @@ declare module '@vue/runtime-core' {
     RouterLink: typeof import('vue-router')['RouterLink']
     RouterView: typeof import('vue-router')['RouterView']
     UserHeader: typeof import('./src/components/layout/UserHeader.vue')['default']
+    WebContainer: typeof import('./src/components/WebContainer.vue')['default']
   }
   export interface ComponentCustomProperties {
     vLoading: typeof import('element-plus/es')['ElLoadingDirective']

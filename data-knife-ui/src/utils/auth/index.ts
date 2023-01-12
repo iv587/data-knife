@@ -1,3 +1,4 @@
+// @ts-ignore
 import Cookies from 'js-cookie'
 
 const TOKEN_KEY = "token"
@@ -15,6 +16,10 @@ class TokenUtils {
 
     removeToken() {
         Cookies.remove(TOKEN_KEY)
+    }
+
+    toLogin () {
+        window.location.href = '/login/'
     }
 }
 
