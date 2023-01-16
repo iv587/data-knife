@@ -1,11 +1,17 @@
 import {defineStore} from 'pinia'
 import {MenuItem} from '@/type'
 
+function isMobile() {
+    let flag = navigator.userAgent.match(/(phone|pad|pod|iPhone|iPod|ios|iPad|Android|Mobile|BlackBerry|IEMobile|MQQBrowser|JUC|Fennec|wOSBrowser|BrowserNG|WebOS|Symbian|Windows Phone)/i);
+    return flag
+}
+
 const useMenuStore = defineStore('menu', {
     state: () => {
+        const mobile = !!isMobile()
         return {
             activeIndex: '',
-            collapse: false,
+            collapse: mobile,
             menuList: [
                 {
                     index: "/connections",
@@ -17,7 +23,7 @@ const useMenuStore = defineStore('menu', {
     actions: {
         updateMenuItem(menuItem: MenuItem, noCreate?: boolean) {
             let notFound = true
-            for (let i = 0 ; i < this.menuList.length; i ++) {
+            for (let i = 0; i < this.menuList.length; i++) {
                 const item = this.menuList[i]
                 if (item.id == menuItem.id) {
                     item.icon = menuItem.icon
