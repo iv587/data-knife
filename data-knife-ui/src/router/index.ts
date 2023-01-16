@@ -7,24 +7,23 @@ const routes = (device: string):RouteRecordRaw[] => {
     return [
         {
             path: '/',
-            name: 'MainView',
-            component: () => import(`@/views/${device}Main.vue`),
+            component: () => import(`@/views/main/${device}Main.vue`),
             redirect: '/connections',
             children: [
                 {
                     path: 'connections',
                     name: 'ConnectionView',
-                    component: () => import('@/views/Connection.vue')
+                    component: () => import(`@/views/connection/${device}Connection.vue`)
                 },
                 {
                     path: 'redis/:id',
                     name: 'RedisView',
-                    component: () => import('@/views/redis/RedisView.vue')
+                    component: () => import(`@/views/redis/${device}RedisView.vue`)
                 },
                 {
                     path: 'redis/info/:id',
                     name: 'RedisInfoView',
-                    component: () => import('@/views/redis/RedisInfoView.vue')
+                    component: () => import(`@/views/redis/RedisInfoView.vue`)
                 },
             ]
         },

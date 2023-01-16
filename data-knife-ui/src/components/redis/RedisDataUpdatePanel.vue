@@ -1,5 +1,5 @@
 <template>
-  <el-dialog destroy-on-close v-model="show">
+  <el-dialog :width="width" destroy-on-close v-model="show">
     <template #header>
       <el-space v-if="formData.key != null && formData.key != ''">
         <el-link type="info">
@@ -60,6 +60,7 @@ const keyTypes = ref([
 const props = defineProps<{
   connectionId: number,
   dbNo: number,
+  width?: string
 }>()
 
 const formData = ref<{

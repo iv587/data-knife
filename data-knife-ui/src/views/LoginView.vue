@@ -108,7 +108,7 @@ const loginHandler = async () => {
     const res = await loginApi(loginForm.value)
     userStore.setLoginRes(res.data)
     window.location.href = '/'
-    } catch (err) {
+  } catch (err) {
   }
 }
 

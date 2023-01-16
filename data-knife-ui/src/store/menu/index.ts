@@ -39,6 +39,9 @@ const useMenuStore = defineStore('menu', {
         },
         toggleCollapse() {
             this.collapse = !this.collapse
+        },
+        setCollapse(collapse: boolean) {
+            this.collapse = collapse
         }
     }
 })

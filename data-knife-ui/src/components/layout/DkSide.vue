@@ -5,14 +5,7 @@
 </template>
 
 <script lang="ts" setup>
-import {computed} from "vue";
-import useMenuStore from "@/store/menu";
 
-const menuStore = useMenuStore()
-
-const list = computed(() => {
-  return menuStore.menuList
-})
 
 </script>
 

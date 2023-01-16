@@ -1,5 +1,5 @@
 <template>
-  <el-dialog title="更新" destroy-on-close v-model="open">
+  <el-dialog :width="width" title="更新" destroy-on-close v-model="open">
     <dk-form :form-data="formData" label-width="60px" @submit="updateHandle">
       <el-form-item prop="name" :rules="[{required: true, message: '请填写别名'}]" label="别名:">
         <el-input v-model="formData.name"/>
@@ -32,6 +32,9 @@ import {getConnection, testConnection, updateConnection} from "@/api/connection"
 import {Connection} from "@/type";
 import message from "@/utils/message";
 
+defineProps<{
+  width?: string
+}>()
 
 const open = ref(false)
 

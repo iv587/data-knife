@@ -41,6 +41,5 @@ const onClick = (index: string) => {
 <style lang="scss">
 .menu:not(.el-menu--collapse) {
   width: 250px;
-  min-height: 400px;
 }
 </style>

@@ -1,6 +1,8 @@
 <template>
   <el-container>
-    <dk-side/>
+    <el-aside style="width: auto ;height: 100vh; display: flex; flex-direction: column; justify-content: space-between">
+      <dk-menu :menu-list="list"/>
+    </el-aside>
     <el-container class="dk-container">
       <el-header class="dk-header">
         <dk-header/>
@@ -15,20 +17,10 @@
 </template>
 
 <script lang="ts" setup>
-import DkSide from '@/components/layout/DkSide.vue'
 import DkHeader from '@/components/layout/DkHeader.vue'
-import {useRoute, useRouter} from "vue-router"
-import {watch} from "vue";
-import useMenuStore from "@/store/menu"
+import {useMenuData} from "@/views/main/menu";
 
-const route = useRoute()
-const router = useRouter()
-const currentRoute =  router.currentRoute
-const menuStore = useMenuStore()
-
-watch(currentRoute, (newRoute, oldRoute) => {
-  menuStore.setActiveIndex(newRoute.path)
-})
+const {list , route} = useMenuData()
 
 </script>
 

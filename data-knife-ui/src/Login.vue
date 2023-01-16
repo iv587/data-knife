@@ -6,7 +6,7 @@
 
 <script lang="ts" setup>
 import zhCn from 'element-plus/es/locale/lang/zh-cn'
-import LoginView from '@/pages/LoginView.vue'</script>
+import LoginView from '@/views/LoginView.vue'</script>
 
 <style scoped>
 
