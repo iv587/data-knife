@@ -8,7 +8,7 @@
         <router-view :key="route.fullPath"/>
       </section>
       <section :class="{hidden: collapse}" class="menu-panel">
-        <dk-menu :menu-list="list"/>
+        <dk-menu @click="() => {menuStore.setCollapse(true)}" menu-cls="menu1" :menu-list="list"/>
       </section>
     </el-main>
 

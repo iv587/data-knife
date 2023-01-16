@@ -1,5 +1,5 @@
 <template>
-  <el-menu class="menu"
+  <el-menu :class="menuCls?? 'menu'"
            router
            @select="onClick"
            :collapse="collapse"
@@ -20,9 +20,13 @@ import {useRouter} from "vue-router";
 const menuStore = useMenuStore()
 const router = useRouter()
 
+const emit = defineEmits<{
+  (e: 'click'):void
+}>()
 
-
-defineProps<{menuList: MenuItem[]}>()
+defineProps<{menuList: MenuItem[],
+menuCls?: string
+}>()
 
 const activeIndex = computed(() => {
   return menuStore.activeIndex
@@ -34,6 +38,7 @@ const collapse= computed(() => {
 
 const onClick = (index: string) => {
   menuStore.setActiveIndex(index)
+  emit('click')
 }
 
 </script>
@@ -41,5 +46,8 @@ const onClick = (index: string) => {
 <style lang="scss">
 .menu:not(.el-menu--collapse) {
   width: 250px;
+}
+.menu1:not(.el-menu--collapse) {
+  width: 100%;
 }
 </style>
