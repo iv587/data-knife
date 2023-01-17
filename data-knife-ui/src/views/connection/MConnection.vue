@@ -29,19 +29,6 @@
             </section>
           </template>
         </el-table-column>
-        <!--
-        <el-table-column width="50" align="center">
-          <template #default="{row}">
-            <el-space direction="vertical">
-              <el-button @click="infoHandler(row)" type="primary" circle :icon="InfoFilled"></el-button>
-              <el-button type="success" @click="openConnectionUpdatePanelHandler(row.id)" circle
-                         :icon="EditPen"></el-button>
-              <el-button type="danger" circle :icon="Delete"></el-button>
-            </el-space>
-          </template>
-        </el-table-column>
-
-         -->
       </el-table>
       <connection-update-panel width="90%" ref="connectionUpdatePanelRef" @update-success="onUpdateSuccessHandler"/>
     </section>
@@ -51,15 +38,14 @@
 <script lang="ts" setup>
 import PageContainer from "@/components/layout/PageContainer.vue";
 import ConnectionIcon from "@/icon/ConnectionIcon.vue";
-import {ref, } from "vue";
 import ConnectionUpdatePanel from "@/components/connection/ConnectionUpdatePanel.vue";
 import RedisCell from "@/components/redis/RedisCell.vue";
 import {Delete, EditPen, InfoFilled} from "@element-plus/icons-vue";
 
-import {useConnection} from '@/views/connection'
+import {ConnectionUpdatePanelType, useConnection} from '@/views/connection'
+import {ref} from "vue";
 
-const connectionUpdatePanelRef = ref<InstanceType<typeof ConnectionUpdatePanel>>()
-
+const connectionUpdatePanelRef = ref<ConnectionUpdatePanelType>(null)
 
 const {
   list,

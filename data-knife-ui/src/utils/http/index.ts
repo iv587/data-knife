@@ -5,6 +5,11 @@ import auth from "@/utils/auth";
 import qs from 'qs'
 import message from "@/utils/message";
 
+export function isMobile() : boolean {
+    let flag = navigator.userAgent.match(/(phone|pad|pod|iPhone|iPod|ios|iPad|Android|Mobile|BlackBerry|IEMobile|MQQBrowser|JUC|Fennec|wOSBrowser|BrowserNG|WebOS|Symbian|Windows Phone)/i);
+    return !!flag
+}
+
 class ApiError extends Error {
     code: number
     msg: string

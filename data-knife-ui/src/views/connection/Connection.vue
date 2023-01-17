@@ -40,9 +40,9 @@ import ConnectionUpdatePanel from "@/components/connection/ConnectionUpdatePanel
 import RedisCell from "@/components/redis/RedisCell.vue";
 import {Delete, EditPen, InfoFilled} from "@element-plus/icons-vue";
 
-import {useConnection} from '@/views/connection'
+import {ConnectionUpdatePanelType, useConnection} from '@/views/connection'
 
-const connectionUpdatePanelRef = ref<InstanceType<typeof ConnectionUpdatePanel>>()
+const connectionUpdatePanelRef = ref<ConnectionUpdatePanelType>(null)
 
 
 const {

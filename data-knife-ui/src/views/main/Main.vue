@@ -9,7 +9,13 @@
       </el-header>
       <el-main style="padding: 10px; height: 100%; width: 100%; background-color: var(--el-bg-color-page)">
         <div style="height: 100%; width: 100%">
-          <router-view :key="route.fullPath"/>
+          <router-view v-slot="{Component, route}">
+            <transition name="fade" mode="out-in">
+              <keep-alive>
+                <component :key="route.path" :is="Component"></component>
+              </keep-alive>
+            </transition>
+          </router-view>
         </div>
       </el-main>
     </el-container>
@@ -38,5 +44,15 @@ const {list , route} = useMenuData()
   display: flex;
   align-items: center;
   border-bottom: 1px solid var(--el-menu-border-color);
+}
+
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 100ms ease;
+}
+
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
 }
 </style>

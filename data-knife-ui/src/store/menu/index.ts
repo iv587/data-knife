@@ -1,9 +1,19 @@
 import {defineStore} from 'pinia'
 import {MenuItem} from '@/type'
+import exp from "constants";
 
 function isMobile() {
     let flag = navigator.userAgent.match(/(phone|pad|pod|iPhone|iPod|ios|iPad|Android|Mobile|BlackBerry|IEMobile|MQQBrowser|JUC|Fennec|wOSBrowser|BrowserNG|WebOS|Symbian|Windows Phone)/i);
     return flag
+}
+
+function addAll(list: MenuItem[], item: MenuItem) {
+    list.push(item)
+    if (item.children && item.children.length > 0) {
+        item.children.forEach(it => {
+            addAll(list, it)
+        })
+    }
 }
 
 const useMenuStore = defineStore('menu', {
@@ -17,7 +27,17 @@ const useMenuStore = defineStore('menu', {
                     index: "/connections",
                     title: "链接管理",
                     icon: 'connection-icon',
-                }] as MenuItem[]
+                }] as MenuItem[],
+            menuAllList: [{
+                index: "/connections",
+                title: "链接管理",
+                icon: 'connection-icon',
+            }] as MenuItem[]
+        }
+    },
+    getters: {
+        getActiveMenuItem(): MenuItem | undefined{
+            return this.menuAllList.find(item => item.index == this.activeIndex)
         }
     },
     actions: {
@@ -38,6 +58,7 @@ const useMenuStore = defineStore('menu', {
             }
             if (notFound) {
                 this.menuList.push(menuItem)
+                addAll(this.menuAllList, menuItem)
             }
         },
         setActiveIndex(index: string) {

@@ -1,5 +1,5 @@
 <template>
-  <el-dialog :width="width" destroy-on-close v-model="show">
+  <el-dialog align-center :width="width" destroy-on-close v-model="show">
     <template #header>
       <el-space v-if="formData.key != null && formData.key != ''">
         <el-link type="info">
@@ -9,7 +9,7 @@
       </el-space>
       <el-link type="info" v-else>添加数据</el-link>
     </template>
-    <dk-form v-loading="loading" :form-data="formData" label-width="80px" @submit="updateDataHandler">
+    <dk-form v-loading="loading" :form-data="formData" label-width="70px" @submit="updateDataHandler">
       <el-form-item label="Key:" prop="key" :rules="[{required: true, message: '请填写key'}]">
         <el-input :disabled="editMode" v-model="formData.key" placeholder="设置缓存key" clearable/>
       </el-form-item>

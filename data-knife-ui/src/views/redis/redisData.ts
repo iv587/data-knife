@@ -11,9 +11,10 @@ dataTagTypeMap.set('hash', '')
 dataTagTypeMap.set('zset', 'danger')
 dataTagTypeMap.set('string', 'success')
 
+export type RedisDataUpdatePanelType =  InstanceType<typeof RedisDataUpdatePanel> | null
+
 
 export function useRedisData(id: number) {
-
 
 
     const pattern = ref<{
@@ -82,7 +83,7 @@ export function useRedisData(id: number) {
         emit('close')
     }
 
-    const openUpdatePanelHandler = (redisDataUpdatePanel: InstanceType<typeof RedisDataUpdatePanel>, key?: string) => {
+    const openUpdatePanelHandler = (redisDataUpdatePanel: any, key?: string) => {
         redisDataUpdatePanel.openHandler(key)
     }
 

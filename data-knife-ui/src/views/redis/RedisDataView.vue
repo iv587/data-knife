@@ -71,9 +71,9 @@ import {Delete, EditPen, Search} from "@element-plus/icons-vue";
 import RedisDbIcon from "@/icon/RedisDbIcon.vue";
 import {ref} from "vue";
 import RedisDataUpdatePanel from "@/components/redis/RedisDataUpdatePanel.vue";
-import {useRedisData} from '@/views/redis/redisData'
+import {RedisDataUpdatePanelType, useRedisData} from '@/views/redis/redisData'
 
-const redisDataUpdatePanel = ref<InstanceType<typeof RedisDataUpdatePanel>>()
+const redisDataUpdatePanel = ref<RedisDataUpdatePanelType>(null)
 const props = defineProps<{
   id: number,
 }>()

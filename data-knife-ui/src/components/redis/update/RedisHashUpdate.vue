@@ -19,9 +19,8 @@
     </section>
     <el-table
       @selection-change="onSelectChange"
-      size="small" :data="tableList" max-height="35vh">
-      <el-table-column type="selection" width="55"></el-table-column>
-      <el-table-column width="150" prop="field" label="filed">
+      size="small" :data="tableList" :max-height="mobileDevice ? '20vh':'35vh'">
+      <el-table-column prop="field" label="filed">
       </el-table-column>
       <el-table-column label="value">
         <template #default="{row}">
@@ -56,6 +55,9 @@ import {h, onMounted, ref} from "vue";
 import message from "@/utils/message";
 import {ElMessageBox} from "element-plus";
 import RedisHashConfirmTips from "@/components/redis/update/RedisHashConfirmTips.vue";
+import {isMobile} from "@/utils/http";
+
+const mobileDevice = isMobile()
 
 const props = defineProps<{
   values: RedisKvPair[]

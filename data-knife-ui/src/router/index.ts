@@ -12,12 +12,12 @@ const routes = (device: string):RouteRecordRaw[] => {
             children: [
                 {
                     path: 'connections',
-                    name: 'ConnectionView',
+                    name: `${device}Connection`,
                     component: () => import(`@/views/connection/${device}Connection.vue`)
                 },
                 {
                     path: 'redis/:id',
-                    name: 'RedisView',
+                    name: `${device}RedisView`,
                     component: () => import(`@/views/redis/${device}RedisView.vue`)
                 },
                 {

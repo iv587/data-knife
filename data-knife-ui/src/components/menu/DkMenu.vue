@@ -1,5 +1,5 @@
 <template>
-  <el-menu :class="menuCls?? 'menu'"
+  <el-menu class="menu"
            router
            @select="onClick"
            :collapse="collapse"
@@ -16,6 +16,7 @@ import {computed} from 'vue'
 import {MenuItem} from "@/type";
 import useMenuStore from '@/store/menu'
 import {useRouter} from "vue-router";
+import {isMobile} from "@/utils/http";
 
 const menuStore = useMenuStore()
 const router = useRouter()
@@ -32,8 +33,10 @@ const activeIndex = computed(() => {
   return menuStore.activeIndex
 })
 
+const mobileDevice = isMobile()
+
 const collapse= computed(() => {
-  return menuStore.collapse
+  return mobileDevice ? null : menuStore.collapse
 })
 
 const onClick = (index: string) => {
@@ -44,10 +47,15 @@ const onClick = (index: string) => {
 </script>
 
 <style lang="scss">
-.menu:not(.el-menu--collapse) {
-  width: 250px;
+@media screen and (min-width: 700px){
+  .menu:not(.el-menu--collapse) {
+    width: 250px;
+  }
 }
-.menu1:not(.el-menu--collapse) {
-  width: 100%;
+
+@media screen and (max-width: 700px){
+  .menu {
+    width: 100%;
+  }
 }
 </style>

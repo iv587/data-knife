@@ -5,6 +5,8 @@ import {Connection} from "@/type";
 import {listConnection} from "@/api/connection";
 import ConnectionUpdatePanel from "@/components/connection/ConnectionUpdatePanel.vue";
 
+export type ConnectionUpdatePanelType =  InstanceType<typeof ConnectionUpdatePanel> | null
+
 export function useConnection() {
     const menuStore = useMenuStore()
 
@@ -55,8 +57,8 @@ export function useConnection() {
 
     }
 
-    const openConnectionUpdatePanelHandler = (connectionUpdatePanelRef: InstanceType<typeof ConnectionUpdatePanel>, id?: number) => {
-        connectionUpdatePanelRef.openHandler()
+    const openConnectionUpdatePanelHandler = (connectionUpdatePanelRef: any, id?: number) => {
+        connectionUpdatePanelRef.openHandler(id)
     }
 
     onMounted(async () => {

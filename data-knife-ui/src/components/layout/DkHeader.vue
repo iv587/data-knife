@@ -8,6 +8,13 @@
       <icon-button v-else :size="30" @click="onToggleCollapse">
         <Fold />
       </icon-button>
+      <el-divider direction="vertical" />
+      <el-space v-if="activeMenuItem">
+        <el-icon v-if="activeMenuItem.icon">
+          <component :is="activeMenuItem.icon"/>
+        </el-icon>
+        <span>{{activeMenuItem.title}}</span>
+      </el-space>
     </div>
     <user-header  />
   </section>
@@ -26,6 +33,10 @@ import {computed} from "vue";
 const menuStore = MenuStore()
 const onToggleCollapse = () => menuStore.toggleCollapse()
 const collapse = computed(() =>{return menuStore.collapse} );
+const activeMenuItem = computed(() => {
+  return menuStore.getActiveMenuItem
+
+})
 </script>
 
 <style lang="scss" scoped>

@@ -6,10 +6,14 @@ import (
 	"github.com/gin-gonic/gin"
 	"io/fs"
 	"net/http"
-	"os"
 	"path"
 	"strings"
 )
+
+var deviceList = []string{
+	"phone", "pad", "pod", "iPhone", "iPod", "ios",
+	"iPad", "Android", "Mobile", "BlackBerry", "IEMobile",
+	"MQQBrowser", "JUC", "Fennec", "wOSBrowser", "BrowserNG", "WebOS", "Symbian", "Windows Phone"}
 
 func toHTTPError(err error) (msg string, httpStatus int) {
 	if errors.Is(err, fs.ErrNotExist) {
@@ -27,15 +31,18 @@ var Router = func(route *gin.Engine) {
 		url := context.Request.URL.Path
 		if strings.Index(url, "/api/") != 0 {
 			filePath := url
-			fi, err := os.Stat(path.Join("web", filePath))
-			if err != nil {
-				if os.IsNotExist(err) || fi.IsDir() {
-					filePath = "index.html"
-				} else {
-					msg, status := toHTTPError(err)
-					context.AbortWithError(status, errors.New(msg))
-					return
+			if strings.EqualFold(url, "/") {
+				filePath = "index.html"
+				ua := context.Request.UserAgent()
+				for _, d := range deviceList {
+					if strings.Contains(ua, d) {
+						filePath = path.Join("mobile", "index.html")
+						break
+					}
 				}
+
+			} else if strings.EqualFold(url, "/login/") || strings.EqualFold(url, "/login") {
+				filePath = path.Join("login", "index.html")
 			}
 			context.File(path.Join("web", filePath))
 			context.Abort()

@@ -5,49 +5,19 @@
     </el-header>
     <el-main class="dk-main fill">
       <section class="fill" style="display: flex; flex-direction: column; justify-content: space-between;">
-        <router-view :key="route.fullPath"/>
+        <router-view v-slot="{Component, route}">
+          <transition name="fade" mode="out-in">
+            <keep-alive>
+              <component :key="route.path" :is="Component"></component>
+            </keep-alive>
+          </transition>
+        </router-view>
       </section>
       <section :class="{hidden: collapse}" class="menu-panel">
         <dk-menu @click="() => {menuStore.setCollapse(true)}" menu-cls="menu1" :menu-list="list"/>
       </section>
     </el-main>
-
-    <!--    <el-container>
-          <el-main class="fill" style="padding: 0;">
-            <section class="m-main fill">
-              <div class="m-main-view fill">
-                <router-view :key="route.fullPath"/>
-              </div>
-              <section :class="{hidden: collapse}" class="menu-panel">
-                <dk-menu :menu-list="list"/>
-              </section>
-            </section>
-          </el-main>
-        </el-container>-->
-
   </el-container>
-  <!--
-  <el-container style="height: 100vh; width: 100vw;">
-    <el-header class="dk-header">
-      <dk-header/>
-    </el-header>
-    <el-main style="padding: 0; height: 100%; width: 100%; background-color: var(--el-bg-color-page)">
-      <div style="padding: 2px;height: 100%; width: 100%">
-        <router-view :key="route.fullPath"/>
-      </div>
-    </el-main>
-   <el-container style="height: 100%">
-      <el-main style="padding: 10px; height: 100%; width: 100%; background-color: var(&#45;&#45;el-bg-color-page)">
-        <div style="height: 100%; width: 100%">
-          <router-view :key="route.fullPath"/>
-        </div>
-      </el-main>
-      <section :class="{hidden: collapse}" class="menu-panel">
-        <dk-menu :menu-list="list"/>
-      </section>
-    </el-container>
-  </el-container>
-  -->
 </template>
 
 <script lang="ts" setup>
@@ -113,5 +83,16 @@ const collapse = computed(() => menuStore.collapse)
   display: flex;
   align-items: center;
   border-bottom: 1px solid var(--el-menu-border-color);
+}
+
+
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 100ms ease;
+}
+
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
 }
 </style>
