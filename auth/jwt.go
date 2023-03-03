@@ -44,7 +44,7 @@ func Verify(strToken string) (bool, *user.User, error) {
 		return []byte(secret), nil
 	})
 	if err != nil {
-		return false, nil, errors.New("网络错误，请重试")
+		return false, nil, nil
 	}
 
 	claims, ok := token.Claims.(*jwtClaims)

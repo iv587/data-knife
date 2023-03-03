@@ -3,6 +3,7 @@ package api
 import (
 	"dk/auth"
 	"errors"
+	"fmt"
 	"github.com/gin-gonic/gin"
 	"io/fs"
 	"net/http"
@@ -92,18 +93,17 @@ var errHandler = func(ctx *gin.Context) {
 	defer func() {
 		if err := recover(); err != nil {
 			err1 := err.(error)
+			fmt.Println(err)
 			errorRes(ctx, err1.Error(), err1)
 		}
+		ctx.Abort()
 	}()
 	ctx.Next()
 }
 
 var authHandler = func(ctx *gin.Context) {
 	tokenStr := ctx.PostForm("token")
-	ok, user, err := auth.Verify(tokenStr)
-	if err != nil {
-		panic(err)
-	}
+	ok, user, _ := auth.Verify(tokenStr)
 	if !ok {
 		notLoginRes(ctx, "")
 		ctx.Abort()

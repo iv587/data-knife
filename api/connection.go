@@ -4,6 +4,7 @@ import (
 	"dk/connection"
 	"dk/redis"
 	"errors"
+	"fmt"
 	"github.com/gin-gonic/gin"
 	"strconv"
 )
@@ -17,7 +18,9 @@ var connectionController = new(ConnectionController)
 // 获取Redis服务器列表
 func (r *ConnectionController) list(ctx *gin.Context) {
 	list, err := connection.List()
+	fmt.Println(list, err)
 	if err != nil {
+		println("pa")
 		panic(err)
 	}
 	successRes(ctx, "", gin.H{

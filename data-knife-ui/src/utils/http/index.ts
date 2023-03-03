@@ -70,6 +70,7 @@ class ApiHttpClient {
             }
             await message.error(msg)
             if (code == 3) {
+                auth.removeToken()
                 window.location.reload()
             }
             throw err
