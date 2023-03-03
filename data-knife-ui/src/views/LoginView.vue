@@ -15,7 +15,7 @@
           </el-input>
         </el-form-item>
         <el-form-item prop="password" :rules="[{required: true, message: '请输入密码'}]">
-          <el-input placeholder="请输入密码" v-model="loginForm.password" type="password" show-password>
+          <el-input placeholder="请输入密码" @change="loginHandler" v-model="loginForm.password" type="password" show-password>
             <template #prefix>
               <el-icon>
                 <Lock/>
