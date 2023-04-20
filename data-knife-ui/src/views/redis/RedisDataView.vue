@@ -43,7 +43,8 @@
           <el-alert :closable="false">共有key{{ keysRes.total }}个，本次获取{{ keysRes.max }}</el-alert>
         </el-page-header>
       </section>
-      <el-table v-loading="dataFetchLoading" :data="keysRes.list" border height="100%">
+      <el-table  scrollbar-always-on v-table-infinite="loadMore" v-loading="dataFetchLoading" :data="keysRes.list"
+                border height="100%">
         <el-table-column prop="key" label="KEY"></el-table-column>
         <el-table-column align="center" label="类型" width="150">
           <template #default="{row}">
@@ -66,28 +67,31 @@
 </template>
 
 <script lang="ts" setup>
-import RedisDb from "@/components/redis/RedisDb.vue";
-import {Delete, EditPen, Search} from "@element-plus/icons-vue";
-import RedisDbIcon from "@/icon/RedisDbIcon.vue";
-import {ref} from "vue";
-import RedisDataUpdatePanel from "@/components/redis/RedisDataUpdatePanel.vue";
-import {RedisDataUpdatePanelType, useRedisData} from '@/views/redis/redisData'
+import RedisDb from '@/components/redis/RedisDb.vue';
+import {Delete, EditPen, Search} from '@element-plus/icons-vue';
+import RedisDbIcon from '@/icon/RedisDbIcon.vue';
+import {ref} from 'vue';
+import RedisDataUpdatePanel from '@/components/redis/RedisDataUpdatePanel.vue';
+import {RedisDataUpdatePanelType, useRedisData} from '@/views/redis/redisData';
 
-const redisDataUpdatePanel = ref<RedisDataUpdatePanelType>(null)
+const redisDataUpdatePanel = ref<RedisDataUpdatePanelType>(null);
 const props = defineProps<{
   id: number,
-}>()
+}>();
 const {
   pattern, keyPattern, dbList, selectDbNum, dataFetchLoading,
-  keysRes, dataTagTypeMap, onSelect, listKeysHandler
-  , showDashboardHandler, openUpdatePanelHandler
-} = useRedisData(props.id)
+  keysRes, dataTagTypeMap, onSelect, listKeysHandler,
+  loadMore
+  , showDashboardHandler, openUpdatePanelHandler,
+} = useRedisData(props.id);
 
-const dataTypeMap = ref<Map<string, string>>(dataTagTypeMap)
+const dataTypeMap = ref<Map<string, string>>(dataTagTypeMap);
 
 const emit = defineEmits<{
   (e: 'close'): void
-}>()
+}>();
+
+
 
 </script>
 

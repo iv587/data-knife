@@ -40,6 +40,14 @@ export function useRedisData(id: number) {
         max: 0
     })
 
+    let loadIndex = 0
+
+    const cacheKeysList = ref<RedisKeyListRes>({
+        list: [],
+        total: 0,
+        max: 0
+    })
+
     const redisDbHandler = async () => {
         const res = await listConnection()
         if (res.data.list.length > 0) {
@@ -55,22 +63,31 @@ export function useRedisData(id: number) {
         await listKeysHandler()
     }
 
+
+
     const listKeysHandler = async () => {
         dataFetchLoading.value = true
         try {
             let searchKey = keyPattern.value
             const {left, right} = pattern.value
-            if (left == 1) {
-                searchKey = '*' + searchKey
-            }
-            if (right == 1) {
-                searchKey =  searchKey + '*'
+            if (searchKey) {
+                if (left == 1) {
+                    searchKey = '*' + searchKey
+                }
+                if (right == 1) {
+                    searchKey =  searchKey + '*'
+                }
             }
             const res = await redisKeysApi({id, dbNo: selectDbNum.value, keyPattern: searchKey})
             const {list, max, total} = res.data
-            keysRes.value.list = list
-            keysRes.value.max = max
+            loadIndex = 0
+            cacheKeysList.value.list = list
+            cacheKeysList.value.max = max
+            cacheKeysList.value.total = total
             keysRes.value.total = total
+            keysRes.value.max = max
+            keysRes.value.list = []
+            loadMore()
         } finally {
             dataFetchLoading.value = false
         }
@@ -91,8 +108,21 @@ export function useRedisData(id: number) {
         await redisDbHandler()
     })
 
+    const loadMore = () => {
+        if (loadIndex < cacheKeysList.value.list.length) {
+            for (let i = loadIndex; i < Math.min(cacheKeysList.value.list.length, loadIndex + 20); i++) {
+                keysRes.value.list.push(cacheKeysList.value.list[i])
+            }
+            console.log(loadIndex, keysRes.value.list.length)
+
+            loadIndex += 20
+        }
+    }
+
+
     return {
         pattern, keyPattern, dbList, selectDbNum, dataFetchLoading, keysRes,
+        loadMore,
         redisDbHandler, onSelect, listKeysHandler, showDashboardHandler,
         openUpdatePanelHandler, dataTagTypeMap
     }
